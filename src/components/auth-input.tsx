@@ -30,7 +30,9 @@ const AuthInput = () => {
       >
         How to get a jira pi token?
       </a>
-      <Button onClick={handleAuth}>Set JIRA Credentials</Button>
+      <div>
+        <Button onClick={handleAuth}>Set JIRA Credentials</Button>
+      </div>
     </div>
   );
 };
