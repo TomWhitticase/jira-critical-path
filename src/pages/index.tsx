@@ -1,118 +1,153 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import AuthInput from "@/components/auth-input";
+import { Combobox } from "@/components/combobox";
+import TicketGraph from "@/components/ticket-graph";
+import { apiService } from "@/services/api-service";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 
-const inter = Inter({ subsets: ['latin'] })
+const Home = () => {
+  const router = useRouter();
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedEpic, setSelectedEpic] = useState<any | null>(null);
 
-export default function Home() {
+  const {
+    data: tickets,
+    isError: ticketsError,
+    isLoading: ticketsLoading,
+  } = useQuery({
+    queryKey: ["jiraTickets", selectedProject?.id, selectedEpic?.key],
+    queryFn: () =>
+      apiService.fetchJiraTickets(selectedProject?.id, selectedEpic.key),
+    enabled: !!selectedProject && !!selectedEpic,
+  });
+
+  const {
+    data: epics,
+    isError: epicsError,
+    isLoading: epicsLoading,
+  } = useQuery({
+    queryKey: ["jiraEpics", selectedProject?.id],
+    queryFn: () => apiService.fetchJiraEpics(selectedProject?.id),
+    enabled: !!selectedProject,
+  });
+
+  const {
+    data: projects,
+    isError: projectsError,
+    isLoading: projectsLoading,
+  } = useQuery({
+    queryKey: ["jiraProjects"],
+    queryFn: apiService.fetchJiraProjects,
+  });
+
+  useEffect(() => {
+    if (router.query.project) {
+      if (!projects) return;
+      setSelectedProject(
+        projects.find(
+          (project: any) => project.key === (router.query.project as string)
+        )
+      );
+    }
+    if (router.query.epic) {
+      if (!epics) return;
+      setSelectedEpic(
+        epics.find((epic: any) => epic.key === (router.query.epic as string))
+      );
+    }
+  }, [router.query, projects, epics]);
+
+  // Update URL when selection changes
+  useEffect(() => {
+    if (!projects || !epics) return;
+    const query = { ...router.query };
+    const selectedProjectId = selectedProject?.key;
+    const selectedEpicId = selectedEpic?.key;
+    if (selectedProjectId) {
+      query.project = selectedProjectId;
+    } else {
+      delete query.project;
+    }
+    if (selectedEpicId) {
+      query.epic = selectedEpicId;
+    } else {
+      delete query.epic;
+    }
+    router.replace({ query }, undefined, { shallow: true });
+  }, [selectedProject?.key, selectedEpic]);
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <div className="flex flex-col gap-4 p-4">
+      <AuthInput />
+      <div className="flex gap-2">
+        {projectsLoading ? (
+          <div>Loading projects...</div>
+        ) : projectsError ? (
+          <div>
+            Error fetching projects! (check that your credentials are correct)
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            <h2 className="text-lg p-1 font-bold">Project</h2>
+            <Combobox
+              value={selectedProject ? selectedProject.key : null}
+              items={projects.map((project: any) => ({
+                label: project.name,
+                value: project.key,
+              }))}
+              onSelect={(selected) => {
+                const query = {
+                  ...router.query,
+                  project: selected,
+                  epic: undefined,
+                };
+                router.push({ query }, undefined, { shallow: true });
+              }}
+              placeholder="Select a project"
             />
-          </a>
+          </div>
+        )}
+
+        {selectedProject && (
+          <div className="flex flex-col">
+            <h2 className="text-lg p-1 font-bold">Epic</h2>
+            {epicsLoading ? (
+              <div>Loading epics...</div>
+            ) : epicsError ? (
+              <div>Error fetching epics!</div>
+            ) : (
+              <Combobox
+                value={selectedEpic ? selectedEpic.id : null}
+                items={epics.map((epic: any) => ({
+                  label: epic.fields.summary,
+                  value: epic.id,
+                }))}
+                onSelect={(selected) =>
+                  setSelectedEpic(
+                    epics.find((epic: any) => epic.id === selected)
+                  )
+                }
+                placeholder="Select an epic"
+              />
+            )}
+          </div>
+        )}
+      </div>
+      {selectedEpic && (
+        <div className="flex flex-col">
+          <h2 className="text-lg font-bold">Tickets</h2>
+          {ticketsLoading ? (
+            <div>Loading tickets...</div>
+          ) : ticketsError ? (
+            <div>Error fetching tickets!</div>
+          ) : (
+            <TicketGraph tickets={tickets} />
+          )}
         </div>
-      </div>
+      )}
+    </div>
+  );
+};
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
-}
+export default Home;
