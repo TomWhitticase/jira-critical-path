@@ -28,7 +28,7 @@ const AuthInput = () => {
         className="underline cursor-pointer text-blue-400"
         href="https://docs.searchunify.com/Content/Content-Sources/Atlassian-Jira-Confluence-Authentication-Create-API-Token.htm"
       >
-        How to get a jira pi token?
+        How to get a jira api token?
       </a>
       <div>
         <Button onClick={handleAuth}>Set JIRA Credentials</Button>

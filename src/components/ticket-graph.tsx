@@ -110,14 +110,41 @@ const TicketGraph: React.FC<TicketGraph> = ({ tickets }) => {
         graph += `${ticket.key}["${nodeLabel}"];\n`;
       });
 
-      // Add edges for blocking relationships
       filteredTickets.forEach((ticket) => {
         ticket.fields.issuelinks?.forEach((link) => {
-          if (link.type.name === "Blocks" && link.outwardIssue) {
-            graph += `${ticket.key} --> ${link.outwardIssue.key};\n`;
+          const linkType = link.type.name;
+          let sourceKey, targetKey;
+          sourceKey = ticket.key;
+          targetKey = link.outwardIssue?.key;
+    
+          // switch (linkType) {
+          //   case "Blocks":
+          //     sourceKey = ticket.key;
+          //     targetKey = link.outwardIssue?.key;
+          //     break;
+          //   case "Depends On":
+          //     sourceKey = link.inwardIssue?.key;
+          //     targetKey = ticket.key;
+          //     break;
+          //   case "Related To":
+          //     sourceKey = ticket.key;
+          //     targetKey = link.outwardIssue?.key;
+          //     break;
+          //   // Add more cases as needed
+          // }
+    
+          if (sourceKey && targetKey) {
+            graph += `${sourceKey} -->|${linkType}| ${targetKey};\n`;
           }
         });
       });
+    
+      // Add style for edges
+      // graph += `linkStyle default stroke:#999,stroke-width:2px,fill:none;\n`;
+      // graph += `linkStyle 0 stroke:#f66,stroke-width:2px;\n`; // Style for 'Blocks' edges
+      // graph += `linkStyle 1 stroke-dasharray: 5 5,stroke:#6a6;\n`; // Style for 'Depends On' edges
+      // graph += `linkStyle 2 stroke-dasharray: 5 5,stroke:#82b;\n`; // Style for 'Related To' edges
+    
 
       if (filteredTickets.length === 0)
         return 'graph TB;\nNoTickets["No tickets to show"]';

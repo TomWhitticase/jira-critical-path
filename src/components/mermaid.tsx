@@ -8,8 +8,8 @@ mermaid.initialize({
   securityLevel: "loose",
   fontFamily: "Fira Code",
   flowchart: {
-    nodeSpacing: 200,
-    rankSpacing: 200,
+    nodeSpacing: 300,
+    rankSpacing: 400,
   },
 });
 
