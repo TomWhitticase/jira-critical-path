@@ -9,6 +9,7 @@ type Ticket = {
     assignee? :{
       displayName: string;
     };
+    labels: string[];
     issuelinks: Array<{
       type: {
         name: string;

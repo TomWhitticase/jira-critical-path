@@ -42,6 +42,7 @@ const Home = () => {
     queryFn: apiService.fetchJiraProjects,
   });
 
+
   useEffect(() => {
     if (router.query.project) {
       if (!projects) return;
@@ -199,8 +200,10 @@ export function ReadyTickets({ tickets }: {tickets:Ticket[]}) {
               >
                 {ticket.key} - {ticket.fields.summary}
               </a>
+              <div className='flex items-center justify-end gap-4'>
+              <div>{ticket.fields.labels.length > 0 ? 'Labels: ' + ticket.fields.labels :''}</div>
               <div>{ticket.fields.assignee ? ticket.fields.assignee.displayName : <div className='text-green-500'>Unassigned</div>}</div>
-         
+              </div>
             </li>
           ))}
         </ul>

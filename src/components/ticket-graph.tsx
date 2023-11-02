@@ -59,7 +59,7 @@ const TicketGraph: React.FC<TicketGraph> = ({ tickets, searchFilteredTickets }) 
     <a href="${ticket.self.split("rest")[0]}/browse/${
           ticket.key
         }" target="_blank">
-      <div style='border: ${searchFilteredTickets.length !== filteredTickets.length && searchFilteredTickets.includes(ticket) ? '5px solid red' : 'none'}'>
+      <div style='border: ${searchFilteredTickets.length !== tickets.length && searchFilteredTickets.includes(ticket) ? '5px solid red' : 'none'}'>
         <h3 style='font-size: 3rem; color: #333;'>${ticket.key}</h3>
         <p style='font-size: 2rem; color: #666;'>${wrapText(
           ticket.fields.summary,
