@@ -30,9 +30,10 @@ export default async function handler(
         Accept: "application/json",
       },
     });
-
+    console.log('successfully fetched projects from jira')
     res.status(200).json(response.data);
   } catch (error: any) {
+    console.log('error getting projects from jira')
     res.status(error.response?.status || 500).json(error.response?.data || {});
   }
 }

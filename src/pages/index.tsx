@@ -23,17 +23,6 @@ const Home = () => {
     enabled: !!selectedProject && !!selectedEpic,
   });
   
-  // https://imanage-jira.atlassian.net
-  // tom.whitticase@imanage.com
-
-  // ATATT3xFfGF0r379DO-yTZNcZjqrdtsdm7AqgY4FcbGe_sMtpXMsyayLXk9smDZD-9IveEa-tpGn1fYHtt7m_FM3HYJzGgzJo5H4WNkJH7tfPn3qNYx0vR6tZZLsZDFDaEcRb6dYJxLjB6RNdizlIE7Eux7pOoHiPynmrf9WoCA5-XBSnYezJHM=8C53C6C0
-  
-
-
-
-
-  console.log(tickets)
-
   const {
     data: epics,
     isError: epicsError,
