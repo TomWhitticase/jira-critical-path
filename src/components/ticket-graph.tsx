@@ -3,39 +3,12 @@ import Mermaid from "./mermaid";
 import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 
-type Ticket = {
-  id: string;
-  self: string;
-  key: string;
-  fields: {
-    key: string;
-    summary: string;
-    url: string;
-    issuelinks: Array<{
-      type: {
-        name: string;
-      };
-      outwardIssue?: {
-        key: string;
-      };
-      inwardIssue?: {
-        key: string;
-      };
-    }>;
-    status: {
-      statusCategory: {
-        name: string;
-        colorName: string;
-      };
-    };
-  };
-};
-
 type TicketGraph = {
   tickets: Ticket[];
+  searchFilteredTickets: Ticket[];
 };
 
-const TicketGraph: React.FC<TicketGraph> = ({ tickets }) => {
+const TicketGraph: React.FC<TicketGraph> = ({ tickets, searchFilteredTickets }) => {
   const [width, setWidth] = useState(1000);
   const [showOnlyBlocking, setShowOnlyBlocking] = useState(false);
 
@@ -79,23 +52,14 @@ const TicketGraph: React.FC<TicketGraph> = ({ tickets }) => {
         : tickets;
 
       let graph = "graph TB;\n";
-      const nodeStyle = `
-  style='
-    border: 2px solid #0077cc;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #f3f4f6;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 250px;
-  '
-`;
+
 
       filteredTickets.forEach((ticket) => {
         const nodeLabel = `
     <a href="${ticket.self.split("rest")[0]}/browse/${
           ticket.key
         }" target="_blank">
-      <div ${nodeStyle}>
+      <div style='border: ${searchFilteredTickets.length !== filteredTickets.length && searchFilteredTickets.includes(ticket) ? '5px solid red' : 'none'}'>
         <h3 style='font-size: 3rem; color: #333;'>${ticket.key}</h3>
         <p style='font-size: 2rem; color: #666;'>${wrapText(
           ticket.fields.summary,
@@ -151,7 +115,7 @@ const TicketGraph: React.FC<TicketGraph> = ({ tickets }) => {
 
       return graph;
     },
-    [showOnlyBlocking, tickets]
+    [searchFilteredTickets, showOnlyBlocking]
   );
 
   const mermaidRaw = generateMermaid(tickets);

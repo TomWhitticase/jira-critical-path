@@ -4,12 +4,13 @@ import TicketGraph from "@/components/ticket-graph";
 import { apiService } from "@/services/api-service";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 const Home = () => {
   const router = useRouter();
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [selectedEpic, setSelectedEpic] = useState<any | null>(null);
+  const [searchTerm, setSearchTerm] = useState('')
 
   const {
     data: tickets,
@@ -21,6 +22,17 @@ const Home = () => {
       apiService.fetchJiraTickets(selectedProject?.id, selectedEpic.key),
     enabled: !!selectedProject && !!selectedEpic,
   });
+  
+  // https://imanage-jira.atlassian.net
+  // tom.whitticase@imanage.com
+
+  // ATATT3xFfGF0r379DO-yTZNcZjqrdtsdm7AqgY4FcbGe_sMtpXMsyayLXk9smDZD-9IveEa-tpGn1fYHtt7m_FM3HYJzGgzJo5H4WNkJH7tfPn3qNYx0vR6tZZLsZDFDaEcRb6dYJxLjB6RNdizlIE7Eux7pOoHiPynmrf9WoCA5-XBSnYezJHM=8C53C6C0
+  
+
+
+
+
+  console.log(tickets)
 
   const {
     data: epics,
@@ -76,6 +88,11 @@ const Home = () => {
     }
     router.replace({ query }, undefined, { shallow: true });
   }, [selectedProject?.key, selectedEpic]);
+
+
+  const filteredTickets = useMemo(()=>{
+    return tickets?.filter(t=> (t.fields.summary.toLowerCase()).includes(searchTerm.toLowerCase()))
+  }, [tickets,searchTerm])
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -141,8 +158,11 @@ const Home = () => {
             <div>Loading tickets...</div>
           ) : ticketsError ? (
             <div>Error fetching tickets!</div>
-          ) : (
-            <TicketGraph tickets={tickets} />
+          ) : (<div className='flex flex-col gap-4'>
+            <input className='rounded border-2 w-96 px-2 py-1' onChange={(e)=>setSearchTerm(e.target.value)} value={searchTerm} placeholder='Search tickets by name...'></input>
+            {filteredTickets && tickets && <TicketGraph searchFilteredTickets={filteredTickets} tickets={tickets}/>}
+            {filteredTickets && <ReadyTickets tickets={filteredTickets} />}
+            </div>
           )}
         </div>
       )}
@@ -151,3 +171,53 @@ const Home = () => {
 };
 
 export default Home;
+
+export function ReadyTickets({ tickets }: {tickets:Ticket[]}) {
+  const findTicketByKey = (key: string) => {
+    return tickets.find(ticket => ticket.key === key);
+  };
+
+  const isReadyToStart = (ticket: Ticket) => {
+    const isStatusTodo = ticket.fields.status.statusCategory.name === 'To Do';
+
+    const isInwardIssuesDone = ticket.fields.issuelinks.every(link => {
+      if (!link.inwardIssue) return true;
+
+      const inwardTicket = findTicketByKey(link.inwardIssue.key);
+      return inwardTicket
+        ? inwardTicket.fields.status.statusCategory.name === 'Done'
+        : false;
+    });
+
+    return isStatusTodo && (ticket.fields.issuelinks.length === 0 || isInwardIssuesDone);
+  };
+
+  const readyTickets = tickets.filter(isReadyToStart);
+
+  return (
+    <div className='border-2  p-4'>
+      <h2 className="text-lg font-bold mb-4">Tickets ready to start</h2>
+      {readyTickets.length > 0 ? (
+        <ul className="list-disc list-inside">
+          {readyTickets.map(ticket => (
+            <li key={ticket.id} className="mt-3 border-b-2 flex justify-between">
+
+              <a 
+                href={`${ticket.self.split("rest")[0]}/browse/${ticket.key}`}
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-blue-500 hover:text-blue-700"
+              >
+                {ticket.key} - {ticket.fields.summary}
+              </a>
+              <div>{ticket.fields.assignee ? ticket.fields.assignee.displayName : <div className='text-green-500'>Unassigned</div>}</div>
+         
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No tickets are ready to start.</p>
+      )}
+    </div>
+  );
+}

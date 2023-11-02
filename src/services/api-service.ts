@@ -14,7 +14,7 @@ const getJiraHeaders = () => {
 };
 
 export const apiService = {
-  fetchJiraTickets: async (projectId: string, epicId: string) => {
+  fetchJiraTickets: async (projectId: string, epicId: string): Promise<Ticket[]> => {
     const headers = getJiraHeaders();
     const { data } = await axios.get(`/api/jira-tickets?project=${projectId}&epic=${epicId}`, { headers });
     return data;
